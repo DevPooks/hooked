@@ -1,0 +1,44 @@
+{
+  "name": "hooked-webhook-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hostable webhook delivery service with retries, signatures, idempotency, replay, and delivery history.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "worker": "tsx watch src/worker.ts",
+    "migrate": "tsx src/db/migrate.ts",
+    "start": "node dist/src/index.js",
+    "start:worker": "node dist/src/worker.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:all": "vitest run",
+    "test:receiver": "tsx tools/test-receiver/index.ts"
+  },
+  "dependencies": {
+    "@fastify/swagger": "9.9.1",
+    "@fastify/swagger-ui": "6.1.1",
+    "bullmq": "6.3.11",
+    "fastify": "5.12.5",
+    "ioredis": "6.0.0",
+    "pg": "8.23.1",
+    "pino": "10.4.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.1",
+    "@types/pg": "8.23.1",
+    "eslint": "10.12.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3"
+  }
+}

@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: hooked
+      POSTGRES_PASSWORD: hooked
+      POSTGRES_DB: hooked
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hooked -d hooked"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    command: ["sh", "-c", "node dist/src/db/migrate.js && node dist/src/index.js"]
+    environment: &hooked-environment
+      DATABASE_URL: postgresql://hooked:hooked@postgres:5432/hooked
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+      WEBHOOK_TIMEOUT_MS: 5000
+      WEBHOOK_MAX_ATTEMPTS: 5
+      MAX_PAYLOAD_BYTES: 262144
+      ALLOW_PRIVATE_ENDPOINTS: ${ALLOW_PRIVATE_ENDPOINTS:-false}
+      LOG_LEVEL: info
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build: .
+    command: ["node", "dist/src/worker.js"]
+    environment: *hooked-environment
+    depends_on:
+      api:
+        condition: service_healthy
+
+  test-receiver:
+    build: .
+    command: ["node", "dist/tools/test-receiver/index.js"]
+    environment:
+      RECEIVER_PORT: 3100
+    ports:
+      - "3100:3100"
+    profiles: ["demo"]
+
+volumes:
+  postgres-data:
+  redis-data:
